@@ -16,8 +16,6 @@ pipe(pipe_fds[2])
 fork()
 
 child:
-	close(pipe_fds[PIPE_READ_INDEX]) // TODO: Necessary?
-
 	open(infile)
 	dup2(infile_fd, STDIN_FILENO)
 	dup2(pipe_fds[PIPE_WRITE_INDEX], STDOUT_FILENO)
@@ -25,7 +23,7 @@ child:
 	execve(cmd1)
 
 parent:
-	close(pipe_fds[PIPE_WRITE_INDEX]) // TODO: Necessary?
+	close(pipe_fds[PIPE_WRITE_INDEX])
 
 	wait(NULL); // TODO: According to Marius this needs to happen after the child's/parent's execve?
 
