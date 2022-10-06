@@ -33,20 +33,12 @@ LIBS := $(LIBFT)
 SOURCES := $(shell find ./src -type f -name "*.c")
 
 # SOURCES :=\
-# ./src/error/private/pipex_get_error.c\
-# ./src/error/private/pipex_get_error_ptr.c\
-# ./src/error/pipex_any_error.c\
-# ./src/error/pipex_print_error.c\
-# ./src/error/pipex_set_error.c\
-# ./src/init/init.c\
-# ./src/main.c
 
 ################################################################################
 
 HEADERS := $(shell find ./src -type f -name "*.h")
 
 # HEADERS +=\
-# ./src/pipex.h
 
 ################################################################################
 

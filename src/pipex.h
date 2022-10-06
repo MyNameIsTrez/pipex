@@ -13,10 +13,12 @@
 #ifndef PIPEX_H
 # define PIPEX_H
 
+# define PIPE_READ_INDEX 0
+# define PIPE_WRITE_INDEX 1
+
 # include "libft.h"
 
-# include "error/pipex_error.h"
-# include "init/pipex_init.h"
+# include "run/pipex_run.h"
 # include "structs/pipex_struct_data.h"
 
 #endif

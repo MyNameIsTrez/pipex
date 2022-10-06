@@ -12,18 +12,84 @@
 
 #include "pipex.h"
 
-int	main(t_i32 argc, char **argv)
-{
-	t_data	data;
+// int	main(t_i32 argc, char *argv[], char *envp[])
+// {
+// 	if (argc != 5)
+// 		return (EXIT_FAILURE);
+// 	if (pipex_run((size_t)argc, argv, envp) != OK)
+// 	{
+// 		pipex_print_error();
+// 		ft_free_allocations();
+// 		return (EXIT_FAILURE);
+// 	}
+// 	ft_free_allocations();
+// 	return (EXIT_SUCCESS);
+// }
 
-	// if (argc <= 1)
-	// 	return (EXIT_SUCCESS);
-	if (pipex_init((size_t)argc, argv, &data) != OK)
+#include <stdio.h> // TODO: REMOVE THIS
+
+int	main(int argc, char *argv[], char *envp[])
+{
+	int		pipe_fds[2];
+	pid_t	cpid;
+	int		infile_fd;
+	int		outfile_fd;
+
+	(void)argc;
+	(void)argv;
+
+	if (pipe(pipe_fds) == -1)
 	{
-		pipex_print_error();
-		ft_free_allocations();
-		return (EXIT_FAILURE);
+		perror("pipe");
+		exit(EXIT_FAILURE);
 	}
-	ft_free_allocations();
-	return (EXIT_SUCCESS);
+
+	cpid = fork();
+	if (cpid == -1)
+	{
+		perror("fork");
+		exit(EXIT_FAILURE);
+	}
+
+	(void)infile_fd;
+	(void)outfile_fd;
+
+	if (cpid == 0)
+	{
+		// close(pipe_fds[PIPE_READ_INDEX]);
+
+		// infile_fd = open("infile", O_RDONLY);
+		// dup2(infile_fd, STDIN_FILENO);
+		// dup2(pipe_fds[PIPE_WRITE_INDEX], STDOUT_FILENO);
+
+		// fprintf(stderr, "Executing 'ls -l'\n");
+
+		execve("/bin/ls", (char *[]){"/bin/ls", "-l", ".", NULL}, envp);
+		perror("execve");
+
+		// (void)envp;
+		printf("foo\n");
+
+		sleep(2);
+	}
+	else
+	{
+		// close(pipe_fds[PIPE_WRITE_INDEX]);
+
+		fprintf(stderr, "Parent waiting\n");
+		wait(NULL);
+		fprintf(stderr, "Parent stopped waiting\n");
+
+		// char	buf;
+		// (void)outfile_fd;
+		// while (read(pipe_fds[PIPE_READ_INDEX], &buf, 1) > 0)
+		// 	write(STDERR_FILENO, &buf, 1);
+
+		// dup2(pipe_fds[PIPE_READ_INDEX], STDIN_FILENO);
+		// outfile_fd = open("outfile", O_WRONLY);
+		// dup2(outfile_fd, STDOUT_FILENO);
+
+		// printf("xd\n");
+		// execve("/usr/bin/wc", (char *[]){"/usr/bin/wc", "-l"}, envp);
+	}
 }
