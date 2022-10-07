@@ -21,4 +21,6 @@
 # include "run/pipex_run.h"
 # include "structs/pipex_struct_data.h"
 
+# include <stdio.h>
+
 #endif

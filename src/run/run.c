@@ -143,8 +143,8 @@
 // 	}
 // 	else
 // 	{
-// 		ft_print_fd("pipex: ", STDERR_FILENO);
-// 		ft_print_fd(cmd1_path, STDERR_FILENO);
+// 		ft_putstr_fd("pipex: ", STDERR_FILENO);
+// 		ft_putstr_fd(cmd1_path, STDERR_FILENO);
 // 		ft_putendl_fd(": command not found", STDERR_FILENO);
 // 	}
 

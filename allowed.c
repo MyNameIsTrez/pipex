@@ -12,24 +12,30 @@ pid_t	fork(void); // Creates a parellel universe of the process at this point
 int		pipe(int pipe_fds[2]); // Allocates two file descriptors, where the data written to the WRITE end can be read from the READ end
 
 /*
-pipe(pipe_fds[2])
-fork()
+pipe(pipe_fds)
+fork 1()
 
-child:
-	open(infile)
+child 1:
+	open("infile")
 	dup2(infile_fd, STDIN_FILENO)
 	dup2(pipe_fds[PIPE_WRITE_INDEX], STDOUT_FILENO)
 
 	execve(cmd1)
 
-parent:
+parent 1:
 	close(pipe_fds[PIPE_WRITE_INDEX])
 
-	wait(NULL); // TODO: According to Marius this needs to happen after the child's/parent's execve?
+	wait(NULL);
 
-	dup2(pipe_fds[PIPE_READ_INDEX], STDIN_FILENO)
-	open(outfile)
-	dup2(outfile_fd, STDOUT_FILENO)
+	fork 2()
 
-	execve(cmd2)
+	child 2:
+		dup2(pipe_fds[PIPE_READ_INDEX], STDIN_FILENO)
+		open("outfile")
+		dup2(outfile_fd, STDOUT_FILENO)
+
+		execve(cmd2)
+
+	parent 2:
+		wait(NULL);
 */
