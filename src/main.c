@@ -160,7 +160,6 @@ void	foo(size_t cmd_index, char *argv[], char *envp[])
 		}
 		else
 		{
-			fprintf(stderr, "error\n");
 			ft_putstr_fd("pipex: ", STDERR_FILENO);
 			ft_putstr_fd(cmd_passed, STDERR_FILENO); // TODO: Should this print the path instead?
 			ft_putendl_fd(": command not found", STDERR_FILENO);
@@ -197,6 +196,8 @@ int	main(int argc, char *argv[], char *envp[])
 
 	if (child_pid_1 == 0)
 	{
+		close(pipe_fds[PIPE_READ_INDEX]);
+
 		infile_fd = open(argv[1], O_RDONLY);
 		if (infile_fd == -1)
 			perror_free_allocations_exit(argv[1]);
@@ -204,9 +205,9 @@ int	main(int argc, char *argv[], char *envp[])
 
 		dup2(pipe_fds[PIPE_WRITE_INDEX], STDOUT_FILENO);
 
-		fprintf(stderr, "child 1\n");
-		sleep(1);
-		fprintf(stderr, "execve 1\n");
+		// fprintf(stderr, "child 1\n");
+		// sleep(1);
+		// fprintf(stderr, "execve 1\n");
 
 		foo(2, argv, envp);
 		perror("execve 1");
@@ -223,22 +224,30 @@ int	main(int argc, char *argv[], char *envp[])
 		{
 			dup2(pipe_fds[PIPE_READ_INDEX], STDIN_FILENO);
 
-			outfile_fd = open(argv[4], O_CREAT | O_WRONLY, 0644);
+			outfile_fd = open(argv[4], O_CREAT | O_WRONLY | O_TRUNC, 0644);
 			dup2(outfile_fd, STDOUT_FILENO);
 
-			fprintf(stderr, "child 2\n");
-			sleep(1);
-			fprintf(stderr, "execve 2\n");
+			// fprintf(stderr, "child 2\n");
+			// sleep(1);
+			// fprintf(stderr, "execve 2\n");
 
 			foo(3, argv, envp);
 			perror("execve 2");
 		}
 		else
 		{
-			fprintf(stderr, "before wait 2\n");
-			wait(NULL);
-			fprintf(stderr, "after wait 2\n");
+			close(pipe_fds[PIPE_READ_INDEX]);
+
+			// fprintf(stderr, "before wait 2\n");
+			waitpid(child_pid_2, NULL, 0); // wait() can be used here, but can release child_pid_1
+			// wait(NULL);
+			// fprintf(stderr, "after wait 2\n");
 		}
+
+		// fprintf(stderr, "before wait 1\n");
+		waitpid(child_pid_1, NULL, 0);
+		// wait(NULL);
+		// fprintf(stderr, "after wait 1\n");
 	}
 
 	ft_free_allocations();
