@@ -189,7 +189,7 @@ int	main(int argc, char *argv[], char *envp[])
 	}
 
 	if (pipe(pipe_fds) == -1)
-		perror_free_allocations_exit("pipe");
+		perror_free_allocations_exit("pipe"); // TODO: Do I want to exit right here? I can still run cmd1
 
 	child_pid_1 = fork();
 	if (child_pid_1 == -1)
@@ -197,7 +197,9 @@ int	main(int argc, char *argv[], char *envp[])
 
 	if (child_pid_1 == 0)
 	{
-		infile_fd = open("infile", O_RDONLY);
+		infile_fd = open(argv[1], O_RDONLY);
+		if (infile_fd == -1)
+			perror_free_allocations_exit(argv[1]);
 		dup2(infile_fd, STDIN_FILENO);
 
 		dup2(pipe_fds[PIPE_WRITE_INDEX], STDOUT_FILENO);
@@ -207,16 +209,11 @@ int	main(int argc, char *argv[], char *envp[])
 		fprintf(stderr, "execve 1\n");
 
 		foo(2, argv, envp);
-		// execve("/usr/bin/wc", (char *[]){"/usr/bin/wc", "-l", NULL}, envp);
 		perror("execve 1");
 	}
 	else
 	{
 		close(pipe_fds[PIPE_WRITE_INDEX]);
-
-		fprintf(stderr, "before wait 1\n");
-		wait(NULL);
-		fprintf(stderr, "after wait 1\n");
 
 		child_pid_2 = fork();
 		if (child_pid_2 == -1)
@@ -226,7 +223,7 @@ int	main(int argc, char *argv[], char *envp[])
 		{
 			dup2(pipe_fds[PIPE_READ_INDEX], STDIN_FILENO);
 
-			outfile_fd = open("outfile", O_CREAT | O_WRONLY, 0644);
+			outfile_fd = open(argv[4], O_CREAT | O_WRONLY, 0644);
 			dup2(outfile_fd, STDOUT_FILENO);
 
 			fprintf(stderr, "child 2\n");
@@ -234,7 +231,6 @@ int	main(int argc, char *argv[], char *envp[])
 			fprintf(stderr, "execve 2\n");
 
 			foo(3, argv, envp);
-			// execve("/usr/bin/wc", (char *[]){"/usr/bin/wc", "-l", NULL}, envp);
 			perror("execve 2");
 		}
 		else
