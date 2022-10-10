@@ -48,19 +48,19 @@ static char	**get_env_subvalues(char *env_value)
 	return (ft_split(env_value, ':'));
 }
 
-static char	*get_path(char *path_subvalue, char *cmd1_path)
+static char	*get_path(char *path_directory, char *cmd_path)
 {
 	size_t	path_len;
 	char	*path;
 
-	path_len = ft_strlen(path_subvalue) + 1 + ft_strlen(cmd1_path) + 1;
+	path_len = ft_strlen(path_directory) + 1 + ft_strlen(cmd_path) + 1;
 	path = ft_malloc(path_len, sizeof(char));
 	if (path == NULL)
 		return (NULL);
 	path[0] = '\0';
-	ft_strlcat(path, path_subvalue, path_len);
+	ft_strlcat(path, path_directory, path_len);
 	ft_strlcat(path, "/", path_len);
-	ft_strlcat(path, cmd1_path, path_len);
+	ft_strlcat(path, cmd_path, path_len);
 	return (path);
 }
 
@@ -84,7 +84,15 @@ static t_status	run_cmd_if_accessible(char *path, char *cmd_argv[], char *envp[]
 	return (ERROR);
 }
 
-static t_status	run_cmd_if_accessible_path_subvalues(char *cmd1_path, char **path_subvalues, char *cmd_argv[], char *envp[])
+static t_status	run_cmd_if_accessible_relative(char *cmd_passed, char *cmd_argv[], char *envp[])
+{
+	char	*path;
+
+	path = get_path(".", cmd_passed);
+	return (run_cmd_if_accessible(path, cmd_argv, envp));
+}
+
+static t_status	run_cmd_if_accessible_path_subvalues(char *cmd_path, char **path_subvalues, char *cmd_argv[], char *envp[])
 {
 	size_t	i;
 	char	*path;
@@ -93,7 +101,7 @@ static t_status	run_cmd_if_accessible_path_subvalues(char *cmd1_path, char **pat
 	while (path_subvalues[i] != NULL)
 	{
 		// fprintf(stderr, "i: %zu\n", i);
-		path = get_path(path_subvalues[i], cmd1_path);
+		path = get_path(path_subvalues[i], cmd_path);
 		if (path == NULL)
 			return (ERROR);
 		if (run_cmd_if_accessible(path, cmd_argv, envp) == OK)
@@ -157,41 +165,44 @@ int	main(int argc, char *argv[], char *envp[])
 		// execve("/usr/bin/wc", (char *[]){"/usr/bin/wc", "-l", NULL}, envp);
 
 		char	**cmd1_parts;
-		char	*cmd1_path;
+		char	*cmd1_passed;
 		char	**cmd1_argv;
 		cmd1_parts = ft_split(argv[2], ' ');
-		cmd1_path = cmd1_parts[0];
-		cmd1_argv = &cmd1_parts[1];
+		cmd1_passed = cmd1_parts[0];
+		cmd1_argv = cmd1_parts;
 
-		char	*path_value;
-		char	**path_subvalues;
-		path_value = get_env_value("PATH", envp);
-		// fprintf(stderr, "%s\n", path_value);
-		path_subvalues = get_env_subvalues(path_value);
-		// fprintf(stderr, "%s\n", path_subvalues[1]);
-
-		if (ft_chr_in_str('/', cmd1_path))
+		if (ft_chr_in_str('/', cmd1_passed))
 		{
 			// fprintf(stderr, "slash\n");
-			if (run_cmd_if_accessible(cmd1_path, cmd1_argv, envp) != OK)
+			if (run_cmd_if_accessible_relative(cmd1_passed, cmd1_argv, envp) != OK)
 			{
 
-			}
-		}
-		else if (path_subvalues != NULL)
-		{
-			// fprintf(stderr, "has subvalues\n");
-			if (run_cmd_if_accessible_path_subvalues(cmd1_path, path_subvalues, cmd1_argv, envp) != OK)
-			{
-				// fprintf(stderr, "not OK\n");
 			}
 		}
 		else
 		{
-			fprintf(stderr, "error\n");
-			ft_putstr_fd("pipex: ", STDERR_FILENO);
-			ft_putstr_fd(cmd1_path, STDERR_FILENO);
-			ft_putendl_fd(": command not found", STDERR_FILENO);
+			char	*path_value;
+			char	**path_subvalues;
+			path_value = get_env_value("PATH", envp);
+			// fprintf(stderr, "%s\n", path_value);
+			path_subvalues = get_env_subvalues(path_value);
+			// fprintf(stderr, "%s\n", path_subvalues[1]);
+
+			if (path_subvalues != NULL)
+			{
+				// fprintf(stderr, "has subvalues\n");
+				if (run_cmd_if_accessible_path_subvalues(cmd1_passed, path_subvalues, cmd1_argv, envp) != OK)
+				{
+					// fprintf(stderr, "not OK\n");
+				}
+			}
+			else
+			{
+				fprintf(stderr, "error\n");
+				ft_putstr_fd("pipex: ", STDERR_FILENO);
+				ft_putstr_fd(cmd1_passed, STDERR_FILENO); // TODO: Should this print the path instead?
+				ft_putendl_fd(": command not found", STDERR_FILENO);
+			}
 		}
 
 		// perror("execve 1");
