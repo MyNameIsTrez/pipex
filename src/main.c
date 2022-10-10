@@ -82,7 +82,6 @@ int	main(int argc, char *argv[], char *envp[])
 	}
 	else
 	{
-		// TODO: Why do I need this? See the other TODO below
 		close(pipe_fds[PIPE_WRITE_INDEX]);
 
 		fprintf(stderr, "before wait 1\n");
@@ -104,7 +103,6 @@ int	main(int argc, char *argv[], char *envp[])
 			sleep(1);
 			fprintf(stderr, "execve 2\n");
 
-			// TODO: Why does this line cause the wait() below to hang? Also see the other TODO above
 			execve("/usr/bin/wc", (char *[]){"/usr/bin/wc", "-l", NULL}, envp);
 			perror("execve 2");
 		}
