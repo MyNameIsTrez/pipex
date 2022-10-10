@@ -124,6 +124,50 @@ static void	perror_free_allocations_exit(char *msg)
 	exit(EXIT_FAILURE);
 }
 
+void	foo(size_t cmd_index, char *argv[], char *envp[])
+{
+	char	**cmd_parts;
+	char	*cmd_passed;
+	char	**cmd_argv;
+	cmd_parts = ft_split(argv[cmd_index], ' ');
+	cmd_passed = cmd_parts[0];
+	cmd_argv = cmd_parts;
+
+	if (ft_chr_in_str('/', cmd_passed))
+	{
+		// fprintf(stderr, "slash\n");
+		if (run_cmd_if_accessible_relative(cmd_passed, cmd_argv, envp) != OK)
+		{
+
+		}
+	}
+	else
+	{
+		char	*path_value;
+		char	**path_subvalues;
+		path_value = get_env_value("PATH", envp);
+		// fprintf(stderr, "%s\n", path_value);
+		path_subvalues = get_env_subvalues(path_value);
+		// fprintf(stderr, "%s\n", path_subvalues[1]);
+
+		if (path_subvalues != NULL)
+		{
+			// fprintf(stderr, "has subvalues\n");
+			if (run_cmd_if_accessible_path_subvalues(cmd_passed, path_subvalues, cmd_argv, envp) != OK)
+			{
+				// fprintf(stderr, "not OK\n");
+			}
+		}
+		else
+		{
+			fprintf(stderr, "error\n");
+			ft_putstr_fd("pipex: ", STDERR_FILENO);
+			ft_putstr_fd(cmd_passed, STDERR_FILENO); // TODO: Should this print the path instead?
+			ft_putendl_fd(": command not found", STDERR_FILENO);
+		}
+	}
+}
+
 #include <stdio.h> // TODO: REMOVE THIS
 
 int	main(int argc, char *argv[], char *envp[])
@@ -162,50 +206,9 @@ int	main(int argc, char *argv[], char *envp[])
 		sleep(1);
 		fprintf(stderr, "execve 1\n");
 
+		foo(2, argv, envp);
 		// execve("/usr/bin/wc", (char *[]){"/usr/bin/wc", "-l", NULL}, envp);
-
-		char	**cmd_parts;
-		char	*cmd_passed;
-		char	**cmd_argv;
-		cmd_parts = ft_split(argv[2], ' ');
-		cmd_passed = cmd_parts[0];
-		cmd_argv = cmd_parts;
-
-		if (ft_chr_in_str('/', cmd_passed))
-		{
-			// fprintf(stderr, "slash\n");
-			if (run_cmd_if_accessible_relative(cmd_passed, cmd_argv, envp) != OK)
-			{
-
-			}
-		}
-		else
-		{
-			char	*path_value;
-			char	**path_subvalues;
-			path_value = get_env_value("PATH", envp);
-			// fprintf(stderr, "%s\n", path_value);
-			path_subvalues = get_env_subvalues(path_value);
-			// fprintf(stderr, "%s\n", path_subvalues[1]);
-
-			if (path_subvalues != NULL)
-			{
-				// fprintf(stderr, "has subvalues\n");
-				if (run_cmd_if_accessible_path_subvalues(cmd_passed, path_subvalues, cmd_argv, envp) != OK)
-				{
-					// fprintf(stderr, "not OK\n");
-				}
-			}
-			else
-			{
-				fprintf(stderr, "error\n");
-				ft_putstr_fd("pipex: ", STDERR_FILENO);
-				ft_putstr_fd(cmd_passed, STDERR_FILENO); // TODO: Should this print the path instead?
-				ft_putendl_fd(": command not found", STDERR_FILENO);
-			}
-		}
-
-		// perror("execve 1");
+		perror("execve 1");
 	}
 	else
 	{
@@ -230,50 +233,9 @@ int	main(int argc, char *argv[], char *envp[])
 			sleep(1);
 			fprintf(stderr, "execve 2\n");
 
+			foo(3, argv, envp);
 			// execve("/usr/bin/wc", (char *[]){"/usr/bin/wc", "-l", NULL}, envp);
-
-			char	**cmd_parts;
-			char	*cmd_passed;
-			char	**cmd_argv;
-			cmd_parts = ft_split(argv[3], ' ');
-			cmd_passed = cmd_parts[0];
-			cmd_argv = cmd_parts;
-
-			if (ft_chr_in_str('/', cmd_passed))
-			{
-				// fprintf(stderr, "slash\n");
-				if (run_cmd_if_accessible_relative(cmd_passed, cmd_argv, envp) != OK)
-				{
-
-				}
-			}
-			else
-			{
-				char	*path_value;
-				char	**path_subvalues;
-				path_value = get_env_value("PATH", envp);
-				// fprintf(stderr, "%s\n", path_value);
-				path_subvalues = get_env_subvalues(path_value);
-				// fprintf(stderr, "%s\n", path_subvalues[1]);
-
-				if (path_subvalues != NULL)
-				{
-					// fprintf(stderr, "has subvalues\n");
-					if (run_cmd_if_accessible_path_subvalues(cmd_passed, path_subvalues, cmd_argv, envp) != OK)
-					{
-						// fprintf(stderr, "not OK\n");
-					}
-				}
-				else
-				{
-					fprintf(stderr, "error\n");
-					ft_putstr_fd("pipex: ", STDERR_FILENO);
-					ft_putstr_fd(cmd_passed, STDERR_FILENO); // TODO: Should this print the path instead?
-					ft_putendl_fd(": command not found", STDERR_FILENO);
-				}
-			}
-
-			// perror("execve 2");
+			perror("execve 2");
 		}
 		else
 		{
