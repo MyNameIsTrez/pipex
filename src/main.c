@@ -12,20 +12,6 @@
 
 #include "pipex.h"
 
-// int	main(t_i32 argc, char *argv[], char *envp[])
-// {
-// 	if (argc != 5)
-// 		return (EXIT_FAILURE);
-// 	if (pipex_run((size_t)argc, argv, envp) != OK)
-// 	{
-// 		pipex_print_error();
-// 		ft_free_allocations();
-// 		return (EXIT_FAILURE);
-// 	}
-// 	ft_free_allocations();
-// 	return (EXIT_SUCCESS);
-// }
-
 static char	*get_env_value(char *name, char *envp[])
 {
 	size_t	name_len;
@@ -64,13 +50,6 @@ static char	*get_path(char *path_directory, char *cmd_path)
 	return (path);
 }
 
-static void	free_allocs_exit(int status)
-{
-	ft_free_allocations();
-	// fprintf(stderr, "errno: %d\n", errno);
-	exit(status);
-}
-
 static void	perror_free_allocs_exit(char *prefix, char *msg, int status)
 {
 	ft_putstr_fd("pipex: ", STDERR_FILENO);
@@ -80,7 +59,8 @@ static void	perror_free_allocs_exit(char *prefix, char *msg, int status)
 		ft_putstr_fd(": ", STDERR_FILENO);
 	}
 	ft_putendl_fd(msg, STDERR_FILENO);
-	free_allocs_exit(status);
+	ft_free_allocations();
+	exit(status);
 }
 
 static void	perror_free_allocs_exit_failure(char *prefix)
@@ -91,15 +71,10 @@ static void	perror_free_allocs_exit_failure(char *prefix)
 static void	exec(char *path, char *cmd_argv[], char *envp[])
 {
 	execve(path, cmd_argv, envp);
-	// int wstatus;
-	// wait(&wstatus);
-	// fprintf(stderr, "wstatus: %d\n", wstatus);
-	// fprintf(stderr, "WEXITSTATUS(wstatus): %d\n", WEXITSTATUS(wstatus));
-	// fprintf(stderr, "errno: %d\n", errno);
 	perror_free_allocs_exit_failure("execve"); // TODO: This is going to call exit(EXIT_FAILURE). Is that wanted?
 }
 
-static void	run_cmd_if_accessible_relative(char *path, char *cmd_argv[], char *envp[])
+static void	run_cmd_with_slashes(char *path, char *cmd_argv[], char *envp[])
 {
 	if (access(path, F_OK) == -1)
 		perror_free_allocs_exit(path, strerror(errno), 127);
@@ -108,7 +83,7 @@ static void	run_cmd_if_accessible_relative(char *path, char *cmd_argv[], char *e
 	exec(path, cmd_argv, envp);
 }
 
-static void	run_cmd_if_accessible_path_subvalues(char *cmd_path, char **path_subvalues, char *cmd_argv[], char *envp[])
+static void	run_cmd_path_env(char *cmd_path, char **path_subvalues, char *cmd_argv[], char *envp[])
 {
 	size_t	i;
 	char	*path;
@@ -118,7 +93,6 @@ static void	run_cmd_if_accessible_path_subvalues(char *cmd_path, char **path_sub
 	i = 0;
 	while (path_subvalues[i] != NULL)
 	{
-		// fprintf(stderr, "i: %zu\n", i);
 		path = get_path(path_subvalues[i], cmd_path);
 		if (path == NULL)
 			return ; // TODO: If the malloc inside get_path() fails, should this be returning or breaking or exiting the process?
@@ -136,33 +110,28 @@ static void	run_cmd_if_accessible_path_subvalues(char *cmd_path, char **path_sub
 	perror_free_allocs_exit(first_existing_path, strerror(EACCES), 126);
 }
 
-void	foo(size_t cmd_index, char *argv[], char *envp[])
+static void	run_cmd(size_t cmd_index, char *argv[], char *envp[])
 {
 	char	**cmd_parts;
 	char	*cmd_passed;
 	char	**cmd_argv;
+	char	*path_value;
+	char	**path_subvalues;
+
 	cmd_parts = ft_split(argv[cmd_index], ' ');
 	cmd_passed = cmd_parts[0];
 	cmd_argv = cmd_parts;
-
 	if (ft_chr_in_str('/', cmd_passed))
-	{
-		// fprintf(stderr, "slash\n");
-		run_cmd_if_accessible_relative(cmd_passed, cmd_argv, envp);
-	}
+		run_cmd_with_slashes(cmd_passed, cmd_argv, envp);
 	else
 	{
-		char	*path_value;
-		char	**path_subvalues;
 		path_value = get_env_value("PATH", envp);
-		// fprintf(stderr, "%s\n", path_value);
 		path_subvalues = get_env_subvalues(path_value);
-		// fprintf(stderr, "%s\n", path_subvalues[1]);
 
 		if (path_subvalues == NULL)
 			perror_free_allocs_exit(cmd_passed, "command not found", 127);
 
-		run_cmd_if_accessible_path_subvalues(cmd_passed, path_subvalues, cmd_argv, envp);
+		run_cmd_path_env(cmd_passed, path_subvalues, cmd_argv, envp);
 	}
 }
 
@@ -179,9 +148,7 @@ int	main(int argc, char *argv[], char *envp[])
 
 	if (argc != 5)
 	{
-		// TODO: Is it supposed to print this as error?
 		ft_putendl_fd("pipex: Wrong argument count", STDERR_FILENO);
-		ft_free_allocations();
 		exit(EXIT_FAILURE);
 	}
 
@@ -205,17 +172,12 @@ int	main(int argc, char *argv[], char *envp[])
 		if (dup2(pipe_fds[PIPE_WRITE_INDEX], STDOUT_FILENO) == -1)
 			perror_free_allocs_exit_failure("dup2");
 
-		// fprintf(stderr, "child 1\n");
-		// sleep(1);
-		// fprintf(stderr, "execve 1\n");
-
-		foo(2, argv, envp);
+		run_cmd(2, argv, envp);
 	}
 
 	close(pipe_fds[PIPE_WRITE_INDEX]);
 
 	child_pid_2 = fork();
-	// child_pid_2 = -1;
 	if (child_pid_2 == -1)
 		perror_free_allocs_exit_failure("fork 2");
 
@@ -228,38 +190,14 @@ int	main(int argc, char *argv[], char *envp[])
 			perror_free_allocs_exit_failure(argv[4]); // TODO: Don't exit immediately?
 		dup2(outfile_fd, STDOUT_FILENO);
 
-		// fprintf(stderr, "child 2\n");
-		// sleep(1);
-		// fprintf(stderr, "execve 2\n");
-
-		foo(3, argv, envp);
+		run_cmd(3, argv, envp);
 	}
 
 	close(pipe_fds[PIPE_READ_INDEX]);
 
-	// fprintf(stderr, "before wait 2\n");
-	waitpid(child_pid_2, &wstatus_2, 0); // wait() can be used here, but means it can release child_pid_1 here
-	// (void)x;
-	// (void)wstatus_2;
-	// fprintf(stderr, "x: %d\n", x);
-	// fprintf(stderr, "wstatus 2: %d\n", wstatus_2);
-	// fprintf(stderr, "WIFEXITED: %d\n", WIFEXITED(wstatus_2));
-	// fprintf(stderr, "WIFSIGNALED: %d\n", WIFSIGNALED(wstatus_2));
-	// fprintf(stderr, "WIFSTOPPED: %d\n", WIFSTOPPED(wstatus_2));
-	// fprintf(stderr, "WEXITSTATUS: %d\n", WEXITSTATUS(wstatus_2));
-	// fprintf(stderr, "WTERMSIG: %d\n", WTERMSIG(wstatus_2));
-	// fprintf(stderr, "WCOREDUMP: %d\n", WCOREDUMP(wstatus_2));
-	// fprintf(stderr, "WSTOPSIG: %d\n", WSTOPSIG(wstatus_2));
-	// wait(NULL);
-	// fprintf(stderr, "after wait 2\n");
-	// }
-
-	// fprintf(stderr, "before wait 1\n");
+	waitpid(child_pid_2, &wstatus_2, 0); // wait() can't be used here since this can catch either child_pid_1 or child_pid_2 first
 	waitpid(child_pid_1, NULL, 0);
-	// wait(NULL);
-	// fprintf(stderr, "after wait 1\n");
 
 	ft_free_allocations();
-	// fprintf(stderr, "wstatus_2:%d\n", wstatus_2);
 	return (WEXITSTATUS(wstatus_2));
 }
