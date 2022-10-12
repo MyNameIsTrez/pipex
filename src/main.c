@@ -110,12 +110,11 @@ static void	run_cmd_if_accessible_relative(char *path, char *cmd_argv[], char *e
 
 static void	run_cmd_if_accessible_path_subvalues(char *cmd_path, char **path_subvalues, char *cmd_argv[], char *envp[])
 {
-	bool	seen;
 	size_t	i;
 	char	*path;
 	char	*first_existing_path;
 
-	seen = false;
+	first_existing_path = NULL;
 	i = 0;
 	while (path_subvalues[i] != NULL)
 	{
@@ -127,15 +126,14 @@ static void	run_cmd_if_accessible_path_subvalues(char *cmd_path, char **path_sub
 		{
 			if (access(path, X_OK) == 0)
 				exec(path, cmd_argv, envp);
-			if (!seen)
+			if (first_existing_path == NULL)
 				first_existing_path = path;
-			seen = true;
 		}
 		i++;
 	}
-	if (seen)
-		perror_free_allocs_exit(first_existing_path, strerror(EACCES), 126);
-	perror_free_allocs_exit(cmd_path, "command not found", 127); // Test 7
+	if (first_existing_path == NULL)
+		perror_free_allocs_exit(cmd_path, "command not found", 127);
+	perror_free_allocs_exit(first_existing_path, strerror(EACCES), 126);
 }
 
 void	foo(size_t cmd_index, char *argv[], char *envp[])
@@ -240,9 +238,9 @@ int	main(int argc, char *argv[], char *envp[])
 	close(pipe_fds[PIPE_READ_INDEX]);
 
 	// fprintf(stderr, "before wait 2\n");
-	pid_t x = waitpid(child_pid_2, &wstatus_2, 0); // wait() can be used here, but means it can release child_pid_1 here
-	(void)x;
-	(void)wstatus_2;
+	waitpid(child_pid_2, &wstatus_2, 0); // wait() can be used here, but means it can release child_pid_1 here
+	// (void)x;
+	// (void)wstatus_2;
 	// fprintf(stderr, "x: %d\n", x);
 	// fprintf(stderr, "wstatus 2: %d\n", wstatus_2);
 	// fprintf(stderr, "WIFEXITED: %d\n", WIFEXITED(wstatus_2));
