@@ -22,5 +22,7 @@
 # include "structs/pipex_struct_data.h"
 
 # include <stdio.h>
+# include <errno.h>
+# include <string.h>
 
 #endif

@@ -64,70 +64,78 @@ static char	*get_path(char *path_directory, char *cmd_path)
 	return (path);
 }
 
-static bool	accessible(char *path)
-{
-	return (access(path, F_OK | X_OK) == 0);
-}
-
-static void	exec(char *path, char *cmd_argv[], char *envp[])
-{
-	execve(path, cmd_argv, envp);
-	// TODO: Print something and exit here!
-}
-
-static void	free_allocations_exit(int status)
+static void	free_allocs_exit(int status)
 {
 	ft_free_allocations();
 	// fprintf(stderr, "errno: %d\n", errno);
 	exit(status);
 }
 
-static void	run_cmd_if_accessible_relative(char *cmd_passed, char *cmd_argv[], char *envp[])
+static void	perror_free_allocs_exit(char *prefix, char *msg, int status)
 {
-	char	*path;
-
-	path = get_path(".", cmd_passed);
-	if (!accessible(path))
+	ft_putstr_fd("pipex: ", STDERR_FILENO);
+	if (prefix != NULL)
 	{
-		ft_putstr_fd("pipex: ", STDERR_FILENO);
-		ft_putstr_fd(cmd_passed, STDERR_FILENO); // TODO: Should this print the path instead?
-		ft_putendl_fd(": Permission denied", STDERR_FILENO);
-		free_allocations_exit(126);
+		ft_putstr_fd(prefix, STDERR_FILENO);
+		ft_putstr_fd(": ", STDERR_FILENO);
 	}
+	ft_putendl_fd(msg, STDERR_FILENO);
+	free_allocs_exit(status);
+}
+
+static void	perror_free_allocs_exit_failure(char *prefix)
+{
+	perror_free_allocs_exit(prefix, strerror(errno), EXIT_FAILURE);
+}
+
+static void	exec(char *path, char *cmd_argv[], char *envp[])
+{
+	execve(path, cmd_argv, envp);
+	// int wstatus;
+	// wait(&wstatus);
+	// fprintf(stderr, "wstatus: %d\n", wstatus);
+	// fprintf(stderr, "WEXITSTATUS(wstatus): %d\n", WEXITSTATUS(wstatus));
+	// fprintf(stderr, "errno: %d\n", errno);
+	perror_free_allocs_exit_failure("execve"); // TODO: This is going to call exit(EXIT_FAILURE). Is that wanted?
+}
+
+static void	run_cmd_if_accessible_relative(char *path, char *cmd_argv[], char *envp[])
+{
+	if (access(path, F_OK) == -1)
+		perror_free_allocs_exit(path, strerror(errno), 127);
+	if (access(path, X_OK) == -1)
+		perror_free_allocs_exit(path, strerror(errno), 126);
 	exec(path, cmd_argv, envp);
 }
 
-static t_status	run_cmd_if_accessible_path_subvalues(char *cmd_path, char **path_subvalues, char *cmd_argv[], char *envp[])
+static void	run_cmd_if_accessible_path_subvalues(char *cmd_path, char **path_subvalues, char *cmd_argv[], char *envp[])
 {
+	bool	seen;
 	size_t	i;
 	char	*path;
+	char	*first_existing_path;
 
+	seen = false;
 	i = 0;
 	while (path_subvalues[i] != NULL)
 	{
 		// fprintf(stderr, "i: %zu\n", i);
 		path = get_path(path_subvalues[i], cmd_path);
 		if (path == NULL)
-			return (ERROR);
-		if (accessible(path))
-			exec(path, cmd_argv, envp);
+			return ; // TODO: If the malloc inside get_path() fails, should this be returning or breaking or exiting the process?
+		if (access(path, F_OK) == 0)
+		{
+			if (access(path, X_OK) == 0)
+				exec(path, cmd_argv, envp);
+			if (!seen)
+				first_existing_path = path;
+			seen = true;
+		}
 		i++;
 	}
-	return (ERROR);
-}
-
-// #include <errno.h> // TODO: REMOVE
-
-static void	perror_free_allocations_exit(char *msg)
-{
-	if (msg == NULL)
-		perror("pipex");
-	else
-	{
-		ft_putstr_fd("pipex: ", STDERR_FILENO);
-		perror(msg);
-	}
-	free_allocations_exit(EXIT_FAILURE);
+	if (seen)
+		perror_free_allocs_exit(first_existing_path, strerror(EACCES), 126);
+	perror_free_allocs_exit(cmd_path, "command not found", 127); // Test 7
 }
 
 void	foo(size_t cmd_index, char *argv[], char *envp[])
@@ -153,13 +161,10 @@ void	foo(size_t cmd_index, char *argv[], char *envp[])
 		path_subvalues = get_env_subvalues(path_value);
 		// fprintf(stderr, "%s\n", path_subvalues[1]);
 
-		if (path_subvalues == NULL || run_cmd_if_accessible_path_subvalues(cmd_passed, path_subvalues, cmd_argv, envp) == ERROR)
-		{
-			ft_putstr_fd("pipex: ", STDERR_FILENO);
-			ft_putstr_fd(cmd_passed, STDERR_FILENO); // TODO: Should this print the path instead?
-			ft_putendl_fd(": command not found", STDERR_FILENO);
-			free_allocations_exit(127);
-		}
+		if (path_subvalues == NULL)
+			perror_free_allocs_exit(cmd_passed, "command not found", 127);
+
+		run_cmd_if_accessible_path_subvalues(cmd_passed, path_subvalues, cmd_argv, envp);
 	}
 }
 
@@ -183,11 +188,11 @@ int	main(int argc, char *argv[], char *envp[])
 	}
 
 	if (pipe(pipe_fds) == -1)
-		perror_free_allocations_exit("pipe");
+		perror_free_allocs_exit_failure("pipe");
 
 	child_pid_1 = fork();
 	if (child_pid_1 == -1)
-		perror_free_allocations_exit("fork 1");
+		perror_free_allocs_exit_failure("fork 1");
 
 	if (child_pid_1 == 0)
 	{
@@ -195,12 +200,12 @@ int	main(int argc, char *argv[], char *envp[])
 
 		infile_fd = open(argv[1], O_RDONLY);
 		if (infile_fd == -1)
-			perror_free_allocations_exit(argv[1]);
+			perror_free_allocs_exit_failure(argv[1]);
 		if (dup2(infile_fd, STDIN_FILENO) == -1)
-			perror_free_allocations_exit("dup2");
+			perror_free_allocs_exit_failure("dup2");
 
 		if (dup2(pipe_fds[PIPE_WRITE_INDEX], STDOUT_FILENO) == -1)
-			perror_free_allocations_exit("dup2");
+			perror_free_allocs_exit_failure("dup2");
 
 		// fprintf(stderr, "child 1\n");
 		// sleep(1);
@@ -214,7 +219,7 @@ int	main(int argc, char *argv[], char *envp[])
 	child_pid_2 = fork();
 	// child_pid_2 = -1;
 	if (child_pid_2 == -1)
-		perror_free_allocations_exit("fork 2");
+		perror_free_allocs_exit_failure("fork 2");
 
 	if (child_pid_2 == 0)
 	{
@@ -222,7 +227,7 @@ int	main(int argc, char *argv[], char *envp[])
 
 		outfile_fd = open(argv[4], O_CREAT | O_WRONLY | O_TRUNC, 0644);
 		if (outfile_fd == -1)
-			perror_free_allocations_exit(argv[4]); // TODO: Don't exit immediately?
+			perror_free_allocs_exit_failure(argv[4]); // TODO: Don't exit immediately?
 		dup2(outfile_fd, STDOUT_FILENO);
 
 		// fprintf(stderr, "child 2\n");
