@@ -65,7 +65,7 @@ OBJECT_PATHS := $(addprefix $(OBJ_DIR)/,$(SOURCES:.c=.o))
 
 # Only cleans when MAKE_DATA changes.
 DATA_FILE := .make_data
-MAKE_DATA := $(CFLAGS) $(SOURCES)
+MAKE_DATA := $(shell uname) $(CFLAGS) $(LIBS) $(SOURCES)
 ifneq ($(shell echo "$(MAKE_DATA)"), $(shell cat "$(DATA_FILE)" 2> /dev/null))
 PRE_RULES := clean
 endif
