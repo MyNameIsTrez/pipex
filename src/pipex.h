@@ -22,4 +22,12 @@
 # include <errno.h>
 # include <string.h>
 
+void	print_free_allocs_exit(char *prefix, char *msg, int status);
+void	strerror_free_allocs_exit_failure(char *prefix);
+
+char	*get_env_value(char *name, char *envp[]);
+char	*get_path(char *path_directory, char *cmd_path);
+
+void	run_cmd(size_t cmd_index, char *argv[], char *envp[]);
+
 #endif

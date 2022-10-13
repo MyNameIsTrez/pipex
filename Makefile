@@ -30,15 +30,16 @@ LIBS := $(LIBFT)
 
 ################################################################################
 
-SOURCES := $(shell find ./src -type f -name "*.c")
-
-# SOURCES :=\
+SOURCES :=\
+src/exit.c\
+src/main.c\
+src/run_cmd_utils.c\
+src/run_cmd.c
 
 ################################################################################
 
-HEADERS := $(shell find ./src -type f -name "*.h")
-
-# HEADERS +=\
+HEADERS +=\
+src/pipex.h
 
 ################################################################################
 
