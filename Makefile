@@ -54,12 +54,6 @@ ifdef SAN
 CFLAGS += -fsanitize=address
 endif
 
-ifdef BONUS
-CFLAGS += -DBONUS=1
-else
-CFLAGS += -DBONUS=0
-endif
-
 ################################################################################
 
 FCLEANED_FILES := $(NAME)
@@ -116,9 +110,5 @@ fclean: clean
 
 .PHONY: re
 re: fclean all
-
-.PHONY: bonus
-bonus:
-	@$(MAKE) BONUS=1 all
 
 ################################################################################

@@ -18,9 +18,6 @@
 
 # include "libft.h"
 
-# include "run/pipex_run.h"
-# include "structs/pipex_struct_data.h"
-
 # include <stdio.h>
 # include <errno.h>
 # include <string.h>
